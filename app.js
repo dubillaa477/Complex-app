@@ -4,8 +4,8 @@ const app = express()
 
 const router = require('./router')
 
-//const port = process.env.PORT
-const port = 3000
+app.use(express.urlencoded({ extended: false }))
+app.use(express.json())
 
 //Sets public folder as default 
 app.use(express.static('public'))
@@ -17,4 +17,4 @@ app.set('view engine', 'ejs')
 //Seting up router actions
 app.use('/', router)
 
-app.listen(port)
+module.exports = app
