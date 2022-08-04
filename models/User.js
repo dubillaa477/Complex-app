@@ -1,5 +1,6 @@
 const validator = require('validator')
-const usersCollection = require('../db').collection("users")
+const usersCollection = require('../db').db().collection("users")
+const becrypt = require('bcryptjs')
 
 let User = function(data) {
     this.data = data
@@ -26,8 +27,8 @@ User.prototype.validate = function() {
     if (this.data.password.length > 0 && this.data.password.length < 8) {
         this.errors.push("Password must be at least 8 characters")
     }
-    if (this.data.password.length > 20) {
-        this.errors.push("Passowrd cannot exeed 20 characters")
+    if (this.data.password.length > 50) {
+        this.errors.push("Passowrd cannot exeed 50 characters")
     }
 
     if (this.data.username.length > 0 && this.data.username.length < 3) {
@@ -67,6 +68,9 @@ User.prototype.register = function() {
     //Step two, only if no validation errors
     //then save to db
     if (!this.errors.length) {
+        //Hash user password
+        let salt = becrypt.genSaltSync(10)
+        this.data.password = becrypt.hashSync(this.data.password, salt)
         usersCollection.insertOne(this.data)
     }
 }
@@ -75,7 +79,7 @@ User.prototype.login = function() {
     return new Promise((resolve, reject) => {
         this.cleanUp()
         usersCollection.findOne({ username: this.data.username }).then((attemptedUser) => {
-            if (attemptedUser && attemptedUser.password == this.data.password) {
+            if (attemptedUser && becrypt.compareSync(this.data.password, attemptedUser.password)) {
                 resolve("Congrats")
             } else {
                 reject("Invalid credentials!")

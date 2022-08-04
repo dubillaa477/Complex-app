@@ -1,13 +1,22 @@
 const { response } = require('../app')
 const User = require('../models/User')
+const { use } = require('../router')
 
 exports.login = function(req, res) {
     let user = new User(req.body)
-    user.login().then(function(result) { res.send(result) }).catch(function(e) { res.send(e) })
+    user.login().then(function(result) {
+        req.session.user = {
+            username: user.data.username,
+            email: user.data.email
+        }
+        res.send(result)
+    }).catch(function(e) {
+        res.send(e)
+    })
 }
 
-exports.logout = function() {
-
+exports.logout = function(req, res) {
+    res.send("You're out!")
 }
 
 exports.register = function(req, res) {
@@ -21,5 +30,9 @@ exports.register = function(req, res) {
 }
 
 exports.home = function(req, res) {
-    res.render('home-guest')
+    if (req.session.user) {
+        res.send("Welcome to real home page!")
+    } else {
+        res.render('home-guest')
+    }
 }
