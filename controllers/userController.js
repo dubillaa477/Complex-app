@@ -4,35 +4,50 @@ const { use } = require('../router')
 
 exports.login = function(req, res) {
     let user = new User(req.body)
-    user.login().then(function(result) {
+    user.login().then(async function(result) {
         req.session.user = {
             username: user.data.username,
-            email: user.data.email
+            avatar: user.avatar
         }
-        res.send(result)
-    }).catch(function(e) {
-        res.send(e)
+        await req.session.save()
+        res.redirect('/')
+    }).catch(async function(e) {
+        req.flash('errors', e)
+        await req.session.save()
+        res.redirect('/')
     })
 }
 
-exports.logout = function(req, res) {
-    res.send("You're out!")
+exports.logout = async function(req, res) {
+    //Form using callbacks
+    //req.session.destroy(function(){
+    //    res.redirect('/')
+    //})
+    await req.session.destroy()
+    res.redirect('/')
 }
 
-exports.register = function(req, res) {
+exports.register = async function(req, res) {
     let user = new User(req.body)
-    user.register()
-    if (user.errors.length) {
-        res.send(user.errors)
-    } else {
-        res.send("Congrats!")
-    }
+    user.register().then(
+        async() => {
+            req.session.user = { username: user.data.username, avatar: user.avatar }
+            req.session.save()
+            res.redirect('/')
+        }
+    ).catch(async(regErrors) => {
+        regErrors.forEach(function(error) {
+            req.flash('regErrors', error)
+        })
+        await req.session.save()
+        res.redirect('/')
+    })
 }
 
 exports.home = function(req, res) {
     if (req.session.user) {
-        res.send("Welcome to real home page!")
+        res.render('home-dashboard', { username: req.session.user.username, avatar: req.session.user.avatar })
     } else {
-        res.render('home-guest')
+        res.render('home-guest', { errors: req.flash('errors'), regErrors: req.flash('regErrors') })
     }
 }
